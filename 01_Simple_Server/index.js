@@ -11,11 +11,21 @@ const server = http.createServer((req, res) => {
 
   const trimmedPath = path.trim().replace(/^\/+|\/+$/g, '')
 
+  // Get the query string as an object
+  const queryStringObject = parsedUrl.query
+
+  // Get the HTTP method
+  const method = req.method.toLowerCase()
+
+  // Get the headers as an object
+  const headers = req.headers
+
   // Send the response
   res.end('Hello World\n')
 
   // Log the request path
-  console.log(`Request received on path : ${trimmedPath}`)
+  console.log(`Requests received with these headers`, headers)
+  // console.log(`Request received on path : ${trimmedPath} with method ${method} and with these query string parameteres `, queryStringObject)
 })
 
 server.listen(3000, () => {
