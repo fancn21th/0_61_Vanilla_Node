@@ -39,7 +39,7 @@ handlers._users.post = (data, callback) => {
   // Check that all required fields are filled out
   const firstName = getValueByFiledName(data, 'payload.firstName')
   const lastName = getValueByFiledName(data, 'payload.lastName')
-  const phone = getValueByFiledName(data, 'payload.phone').length == 10 ? getValueByFiledName(data, 'payload.phone') : false
+  const phone = getValueByFiledName(data, 'payload.phone').length == 11 ? getValueByFiledName(data, 'payload.phone') : false
   const password = getValueByFiledName(data, 'payload.password')
   const tosAgreement = typeof(data.payload.tosAgreement) == 'boolean' && data.payload.tosAgreement == true ? true : false
 
