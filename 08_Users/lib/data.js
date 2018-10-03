@@ -59,7 +59,7 @@ lib.update = (dir, file, data, callback) => {
   fs.open(`${lib.baseDir}${dir}/${file}.json`, 'r+', (err, fileDescriptor) => {
     if(!err && fileDescriptor) {
       // Convert data to string
-      const stringData = JSON.stringify(data)
+      const stringData = JSON.stringify(data, null, 4)
 
       // Truncate the file
       fs.truncate(fileDescriptor, err => {

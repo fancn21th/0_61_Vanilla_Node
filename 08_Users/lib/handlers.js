@@ -10,13 +10,13 @@ const helpers = require('./helpers')
 
 const handlers = {}
 
-const getValueByFiledName = (data, name) => {
+const getValueByNestedFieldName = (data, name) => {
   const nestedNames = name.split('.')
   let value = data
   nestedNames.forEach(nestedName => {
     value = value[nestedName]
   })
-  return (value && value.trim()) || false
+  return value && value.trim()
 }
 
 const getValueFromQuerystring = (data, name) => {
@@ -41,10 +41,10 @@ handlers._users = {}
 handlers._users.post = (data, callback) => {
 
   // Check that all required fields are filled out
-  const firstName = getValueByFiledName(data, 'payload.firstName')
-  const lastName = getValueByFiledName(data, 'payload.lastName')
-  const phone = getValueByFiledName(data, 'payload.phone').length == 11 ? getValueByFiledName(data, 'payload.phone') : false
-  const password = getValueByFiledName(data, 'payload.password')
+  const phone = getValueByNestedFieldName(data, 'payload.phone').length == 11 ? getValueByNestedFieldName(data, 'payload.phone') : false
+  const firstName = getValueByNestedFieldName(data, 'payload.firstName')
+  const lastName = getValueByNestedFieldName(data, 'payload.lastName')
+  const password = getValueByNestedFieldName(data, 'payload.password')
   const tosAgreement = typeof(data.payload.tosAgreement) == 'boolean' && data.payload.tosAgreement == true ? true : false
 
   if (firstName && lastName && phone && password && tosAgreement) {
@@ -98,6 +98,7 @@ handlers._users.post = (data, callback) => {
 }
 
 // Users - Get
+// Required data: phone
 // TODO: Only authenticated user access granted
 handlers._users.get = (data, callback) => {
   // Check that the phone number is valid
@@ -121,13 +122,98 @@ handlers._users.get = (data, callback) => {
 }
 
 // Users - Put
+// Required data: phone
+// Optional data: firstName, lastName, password (at least one must be specified)
+// TODO: Only authenticated user access granted
 handlers._users.put = (data, callback) => {
+  // Check for the required field
+  const phone = getValueByNestedFieldName(data, 'payload.phone').length == 11 ? getValueByNestedFieldName(data, 'payload.phone') : false
+
+  // Check for the optional fields
+  const firstName = getValueByNestedFieldName(data, 'payload.firstName')
+  const lastName = getValueByNestedFieldName(data, 'payload.lastName')
+  const password = getValueByNestedFieldName(data, 'payload.password')
+
+  // Error if the phone is invalid
+  if(phone) {
+    // Error if nothing is sent to update
+    if (firstName || lastName || password) {
+      // Lookup the user
+      _data.read('users', phone, (err, userData) => {
+        if(!err && userData) {
+          // Update the fields necessary
+          if (firstName) {
+            userData.firstName = firstName
+          }
+          // Update the fields necessary
+          if (lastName) {
+            userData.lastName = lastName
+          }
+          // Update the fields necessary
+          if (password) {
+            userData.hashedPassword = helpers.hash(password)
+          }
+          // Store the new updates
+          _data.update('users', phone, userData, err => {
+            if(!err) {
+              callback(200)
+            } else {
+              console.log(err)
+              callback(500, {
+                'Error': 'Could not update the user'
+              })
+            }
+          })
+        } else {
+          callback(400, {
+            'Error': 'The specified user does not exist'
+          })
+        }
+      })
+    } else {
+      callback(400, {
+        'Error': 'Missing fields to update'
+      })
+    }
+  } else {
+    callback(400, {
+      'Error': 'Missing required field'
+    })
+  }
 
 }
 
 // Users - delete
+// Required data: phone
+// TODO: Only authenticated user access granted
+// TODO: Delete any other data files associated with this user
 handlers._users.delete = (data, callback) => {
-
+  // Check that the phone number is valid
+  const phone = getValueFromQuerystring(data, 'phone').length == 11 ? getValueFromQuerystring(data, 'phone') : false
+  if (phone) {
+    // Lookup the user
+    _data.delete('users', phone, (err, data) => {
+      if(!err && data) {
+        _data.delete('users', phone, err => {
+          if (!err) {
+            callback(200)
+          } else {
+            callback(500, {
+              'Error': 'Could not delete the specified user'
+            })
+          }
+        })
+      } else {
+        callback(400, {
+          'Error': 'Could not find the specified user'
+        })
+      }
+    })
+  } else {
+    callback(400, {
+      'Error': 'Missing required field'
+    })
+  }
 }
 
 // Ping handler
