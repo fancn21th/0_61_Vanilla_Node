@@ -19,6 +19,10 @@ const getValueByFiledName = (data, name) => {
   return (value && value.trim()) || false
 }
 
+const getValueFromQuerystring = (data, name) => {
+  return data.queryStringObject[name] && data.queryStringObject[name].trim()
+}
+
 handlers.users = (data, callback) => {
   const acceptableMethods = ['post', 'get', 'put', 'delete']
   if (acceptableMethods.indexOf(data.method) > -1) {
@@ -46,7 +50,7 @@ handlers._users.post = (data, callback) => {
   if (firstName && lastName && phone && password && tosAgreement) {
     // Make sure that the user doesn't already exist
     _data.read('users', phone, (err, data) => {
-      if(!err) {
+      if(err) {
         // Hash the password
         const hashedPassword = helpers.hash(password)
 
@@ -94,8 +98,26 @@ handlers._users.post = (data, callback) => {
 }
 
 // Users - Get
+// TODO: Only authenticated user access granted
 handlers._users.get = (data, callback) => {
-
+  // Check that the phone number is valid
+  const phone = getValueFromQuerystring(data, 'phone').length == 11 ? getValueFromQuerystring(data, 'phone') : false
+  if (phone) {
+    // Lookup the user
+    _data.read('users', phone, (err, data) => {
+      if(!err && data) {
+        // Remove the hashed password from the user object before returning it to the requester
+        delete data.hashedPassword
+        callback(200, data)
+      } else {
+        callback(404)
+      }
+    })
+  } else {
+    callback(400, {
+      'Error': 'Missing required field'
+    })
+  }
 }
 
 // Users - Put

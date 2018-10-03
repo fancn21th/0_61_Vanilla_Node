@@ -5,6 +5,7 @@
 // Dependencies
 const fs = require('fs')
 const path = require('path')
+const helpers = require('./helpers')
 
 // Container for the module (to be exported)
 const lib = {}
@@ -18,7 +19,7 @@ lib.create = (dir, file, data, callback) => {
   fs.open(`${lib.baseDir}${dir}/${file}.json`, 'wx', (err, fileDescriptor) => {
     if(!err && fileDescriptor) {
       // Convert data to string
-      const stringData = JSON.stringify(data)
+      const stringData = JSON.stringify(data, null, 4)
 
       // Write to file and close it
       fs.writeFile(fileDescriptor, stringData, err => {
@@ -43,7 +44,12 @@ lib.create = (dir, file, data, callback) => {
 // Read data from a file
 lib.read = (dir, file, callback) => {
   fs.readFile(`${lib.baseDir}${dir}/${file}.json`, 'utf8', (err, data) => {
-    callback(err, data)
+    if(!err && data) {
+      const parsedData = helpers.parseJsonToObject(data)
+      callback(false, parsedData)
+    } else {
+      callback(err, data)
+    }
   })
 }
 
