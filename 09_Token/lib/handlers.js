@@ -295,13 +295,67 @@ handlers._tokens.post = (data, callback) => {
 }
 
 // Tokens - Get
+// Required data: id
+// Optional data: none
 handlers._tokens.get = (data, callback) => {
-
+  // Check that the phone number is valid
+  const id = getValueFromQuerystring(data, 'id').length == 20 ? getValueFromQuerystring(data, 'id') : false
+  if (id) {
+    // Lookup the token
+    _data.read('tokens', id, (err, tokenData) => {
+      if(!err && tokenData) {
+        callback(200, tokenData)
+      } else {
+        callback(404)
+      }
+    })
+  } else {
+    callback(400, {
+      'Error': 'Missing required field'
+    })
+  }
 }
 
 // Tokens - Put
+// Required data: id, extend
+// Optional data: none
 handlers._tokens.put = (data, callback) => {
+  const id = getValueByNestedFieldName(data, 'payload.id').length == 20 ? getValueByNestedFieldName(data, 'payload.id') : false
+  const extend = typeof(data.payload.extend) == 'boolean' && data.payload.extend == true ? true : false
+  if (id && extend) {
+    _data.read('tokens', id, (err, tokenData) => {
+      if (!err && tokenData) {
+        // Check to make sure the token is not already expired
+        if (tokenData.expires > Date.now()) {
+          // Set the expiration an hour from now
+          tokenData.expires = Date.now() + 1000 * 60 * 60
 
+          // Store the new updates
+          _data.update('tokens', id, tokenData, err => {
+            if(!err) {
+              callback(200)
+            } else {
+              callback(500, {
+                'Error': 'Could not update the token\'s expiration'
+              })
+            }
+          })
+        } else {
+          callback(400, {
+            'Error': 'The token has already expired, and can not be extended'
+          })
+        }
+      } else {
+        callback(400, {
+          'Error': 'Specified token does not exist'
+        })
+      }
+    })
+  } else {
+    callback(400, {
+      'Error': 'Missing required field(s) or field(s) are invalid'
+    })
+  }
 }
 
 // Tokens - Delete
