@@ -205,7 +205,7 @@ handlers._users.delete = (data, callback) => {
   const phone = getValueFromQuerystring(data, 'phone').length == 11 ? getValueFromQuerystring(data, 'phone') : false
   if (phone) {
     // Lookup the user
-    _data.delete('users', phone, (err, data) => {
+    _data.read('users', phone, (err, data) => {
       if(!err && data) {
         _data.delete('users', phone, err => {
           if (!err) {
@@ -359,8 +359,35 @@ handlers._tokens.put = (data, callback) => {
 }
 
 // Tokens - Delete
+// Required data: id
+// Optional data: none
 handlers._tokens.delete = (data, callback) => {
-
+// Check that the phone number is valid
+  const id = getValueFromQuerystring(data, 'id').length == 20 ? getValueFromQuerystring(data, 'id') : false
+  if (id) {
+    // Lookup the token
+    _data.read('tokens', id, (err, data) => {
+      if(!err && data) {
+        _data.delete('tokens', id, err => {
+          if (!err) {
+            callback(200)
+          } else {
+            callback(500, {
+              'Error': 'Could not delete the specified token'
+            })
+          }
+        })
+      } else {
+        callback(400, {
+          'Error': 'Could not find the specified token'
+        })
+      }
+    })
+  } else {
+    callback(400, {
+      'Error': 'Missing required field'
+    })
+  }
 }
 
 // Export the module
